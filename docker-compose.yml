@@ -1,0 +1,53 @@
+services:
+  server:
+    build: .
+    container_name: cmp-server
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+    depends_on:
+      - postgres
+    command: npm run ${NODE_ENV:-dev}
+    networks:
+      - cmp-local
+
+  postgres:
+    image: postgres:17
+    container_name: cmp-postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: mydatabase
+    networks:
+      - cmp-local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:9.1.0
+    container_name: cmp-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    networks:
+      - cmp-local
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+networks:
+  cmp-local:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data:
