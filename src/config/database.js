@@ -4,6 +4,15 @@ require('dotenv').config({
 
 const Sequelize = require('sequelize');
 
+// Log the connection details for debugging
+console.log('Database connection details:', {
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  dialect: 'postgres'
+});
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,

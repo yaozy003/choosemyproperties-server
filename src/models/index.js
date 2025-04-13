@@ -20,6 +20,10 @@ const User = sequelize.define('User', {
       isEmail: true
     }
   },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
