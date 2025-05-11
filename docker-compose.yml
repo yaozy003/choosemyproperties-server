@@ -9,6 +9,8 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3001
+      - DATABASE_URL=postgresql://myuser:mysecretpassword@postgres:5432/mydatabase?schema=public
     depends_on:
       - postgres
     command: npm run ${NODE_ENV:-dev}

@@ -1,5 +1,5 @@
 const express = require('express');
-const { User } = require('../models');
+const prisma = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/auth');
@@ -15,10 +15,12 @@ const registerHandler = async (req, res, next) => {
 
     // Check if user already exists
     console.log('Checking if user exists with email:', email);
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
     if (existingUser) {
       console.log('User already exists with email:', email);
-      res.status(400).json({ error: 'Email already registered' });
+      res.status(400).json({ error: 'Registration failed. Please try again.' });
       return;
     }
 
@@ -34,10 +36,12 @@ const registerHandler = async (req, res, next) => {
       
       // Create user
       console.log('Creating new user');
-      const user = await User.create({
-        name,
-        email,
-        password: finalHashedPassword
+      const user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: finalHashedPassword
+        }
       });
       console.log('User created successfully:', user.id);
 
@@ -69,7 +73,7 @@ const registerHandler = async (req, res, next) => {
       stack: error.stack,
       code: error.code
     });
-    next(error);
+    res.status(400).json({ error: 'Registration failed. Please try again.' });
   }
 };
 
@@ -79,7 +83,9 @@ const loginHandler = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = await User.findOne({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
@@ -113,8 +119,15 @@ const loginHandler = async (req, res, next) => {
 // Get user profile (protected route)
 const getProfileHandler = async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
     res.json(user);
   } catch (error) {
@@ -126,9 +139,12 @@ const getProfileHandler = async (req, res, next) => {
 const updateProfileHandler = async (req, res, next) => {
   try {
     const { name, email } = req.body;
-    await req.user.update({
-      name,
-      email
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name,
+        email
+      }
     });
     res.json({ message: 'Profile updated successfully' });
   } catch (error) {

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { sequelize, syncModels } = require('./models');
+const prisma = require('./models');
 const routes = require('./routes/index.js');
 
 // Load Env var
@@ -13,23 +13,26 @@ require('dotenv').config({
 console.log('Environment variables:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
-  DB_HOST: process.env.DB_HOST,
-  DB_PORT: process.env.DB_PORT,
-  DB_NAME: process.env.DB_NAME,
-  DB_USER: process.env.DB_USER
+  DATABASE_URL: process.env.DATABASE_URL ? '***' : undefined // Mask the URL for security
 });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // route
 app.use('/api', routes);
@@ -47,11 +50,8 @@ app.use((err, req, res, next) => {
 // DB connection test
 const testDbConnection = async () => {
   try {
-    await sequelize.authenticate();
+    await prisma.$connect();
     console.log(`Database connection established successfully. Environment: ${process.env.NODE_ENV}`);
-    
-    // Sync models
-    await syncModels();
   } catch (error) {
     console.error('Unable to connect to the database:', error);
     // Don't exit the process, just log the error
